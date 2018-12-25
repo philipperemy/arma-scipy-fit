@@ -25,7 +25,6 @@ def main():
             noises.append(noise)
             predictions.append(pred)
         predictions = np.transpose(predictions)
-        # to log volumes.
         return predictions
 
     num_steps = 0
