@@ -3,14 +3,14 @@ from statsmodels.tsa.arima_model import ARMA
 from statsmodels.tsa.arima_process import ArmaProcess
 
 np.random.seed(12345)
-arparams = np.array([0.25, -0.50])
+arparams = np.array([0.25])
 maparams = np.array([0.75])
 ar = np.r_[1, -arparams]  # add zero-lag and negate
 ma = np.r_[1, maparams]  # add zero-lag
 arma_process = ArmaProcess(ar, ma)
 y = arma_process.generate_sample(10000)
 np.savez(file='y.npz', y=y)
-model = ARMA(y, (2, 1)).fit(trend='nc', disp=0)
+model = ARMA(y, (1, 1)).fit(trend='nc', disp=0)
 
 print(model.params)
 
