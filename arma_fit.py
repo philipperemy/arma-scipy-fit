@@ -1,10 +1,6 @@
 import numpy as np
 
 
-def mae(u, v):
-    return np.mean(np.abs(u - v))
-
-
 def main():
     """
     Main training function.
