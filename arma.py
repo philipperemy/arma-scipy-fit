@@ -9,15 +9,15 @@ ar = np.r_[1, -arparams]  # add zero-lag and negate
 ma = np.r_[1, maparams]  # add zero-lag
 arma_process = ArmaProcess(ar, ma)
 y = arma_process.generate_sample(10000)
-np.savez(file='y.npz', y=y)
-model = ARMA(y, (2, 1)).fit(trend='nc', disp=0)
+np.savez(file='y.npz', y=y, order=[len(arparams), len(maparams)])
+model = ARMA(y, (len(arparams), len(maparams))).fit(trend='nc', disp=0)
 
 print(model.params)
 
-import matplotlib.pyplot as plt
-
-plt.plot(y)
-plt.show()
+# import matplotlib.pyplot as plt
+#
+# plt.plot(y)
+# plt.show()
 
 # https://en.wikipedia.org/wiki/Autoregressive%E2%80%93moving-average_model
 # Estimating coefficients >

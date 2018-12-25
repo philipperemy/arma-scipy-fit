@@ -9,8 +9,9 @@ def main():
     """
     Main training function.
     """
-    order = [1, 1]
-    y = np.load('y.npz')['y']
+    params = np.load('y.npz')
+    y = params['y']
+    order = params['order']
     nobs = len(y)
 
     def predict_step(x, k_ar_0, k_ma_0):
