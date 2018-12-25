@@ -27,6 +27,7 @@ def main():
 
     def score_function(p, t):
         score = np.mean(np.square(np.clip(p, -1e10, 1e10) - t))
+        # score = np.mean((np.sign(p) * np.sign(t) + 1) / 2)
         return score
 
     def optimization_step(coefficients):
