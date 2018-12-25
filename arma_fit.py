@@ -48,8 +48,8 @@ def main():
 
     solver = 'Nelder-Mead'  # Powell
     np.random.seed(123)
-    k_ar = np.random.uniform(size=(order[0],)) * 0.1
-    k_ma = np.random.uniform(size=(order[1],)) * 0.1
+    k_ar = np.random.uniform(low=-1, high=1, size=(order[0],)) * 0.1
+    k_ma = np.random.uniform(low=-1, high=1, size=(order[1],)) * 0.1
     res = minimize(optimization_step, np.concatenate([k_ar, k_ma]),
                    method=solver, options={'maxiter': 10000, 'disp': True})
     print(res.x)
