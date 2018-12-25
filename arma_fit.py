@@ -16,11 +16,13 @@ def main():
 
     def predict_step(x, k_ar_0, k_ma_0):
         order_ar = order[0]
-        noise = np.random.standard_normal(size=1)
+        order_ma = order[1]
+        noises = [np.random.normal(size=1, scale=0.1)] * order_ma
         predictions = [np.zeros(shape=(1,))] * order_ar
         for t in range(order_ar, nobs):
-            pred = np.dot(k_ar_0, np.flip(x[t - order_ar:t])) + k_ma_0 * noise
+            pred = np.dot(k_ar_0, np.flip(x[t - order_ar:t])) + np.dot(k_ma_0, np.flip(noises[t - order_ma:t]))
             noise = x[t] - pred
+            noises.append(noise)
             predictions.append(pred)
         predictions = np.transpose(predictions)
         # to log volumes.
@@ -40,8 +42,7 @@ def main():
         predictions = predict_step(y, k_ar_0, k_ma_0)
         score = score_function(predictions, y)
 
-        if num_steps % 100 == 0:
-            print(coefficients, score)
+        print(coefficients, score)
 
         num_steps += 1
         return score
@@ -50,7 +51,7 @@ def main():
 
     np.set_printoptions(linewidth=150, precision=2, suppress=True)
 
-    solver = 'Powell'
+    solver = 'Nelder-Mead' # Powell
     k_ar = np.random.uniform(size=(order[0],))
     k_ma = np.random.uniform(size=(order[1],))
     res = minimize(optimization_step, np.concatenate([k_ar, k_ma]),

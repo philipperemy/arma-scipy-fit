@@ -3,8 +3,8 @@ from statsmodels.tsa.arima_model import ARMA
 from statsmodels.tsa.arima_process import ArmaProcess
 
 np.random.seed(12345)
-arparams = np.array([0.25])  # np.array([0.25, -0.50])
-maparams = np.array([0.75])
+arparams = np.array([0.25, -0.5])  # np.array([0.25, -0.50])
+maparams = np.array([0.50, -0.4])
 ar = np.r_[1, -arparams]  # add zero-lag and negate
 ma = np.r_[1, maparams]  # add zero-lag
 arma_process = ArmaProcess(ar, ma)
