@@ -14,10 +14,11 @@ def main():
     nobs = len(y)
 
     def predict_step(x, k_ar_0, k_ma_0):
-        noise = np.random.standard_normal(size=nobs)
-        predictions = [np.zeros(shape=(nobs,))]
-        for t in range(1, nobs):
-            pred = k_ar_0 * x[t - 1] + k_ma_0 * noise
+        order_ar = order[0]
+        noise = np.random.standard_normal(size=1)
+        predictions = [np.zeros(shape=(1,))] * order_ar
+        for t in range(order_ar, nobs):
+            pred = np.dot(k_ar_0, x[t - order_ar:t]) + k_ma_0 * noise
             noise = x[t] - pred
             predictions.append(pred)
         predictions = np.transpose(predictions)
@@ -33,14 +34,12 @@ def main():
 
     def optimization_step(coefficients):
         nonlocal num_steps
-        cutoff = len(coefficients) // 2
-        k_ar_0 = coefficients[:cutoff]
-        k_ma_0 = coefficients[cutoff:]
+        k_ar_0 = coefficients[0]
+        k_ma_0 = coefficients[1]
         predictions = predict_step(y, k_ar_0, k_ma_0)
         score = score_function(predictions, y)
 
-        if num_steps % 1000 == 0:
-            print(coefficients)
+        print(coefficients, score)
 
         num_steps += 1
         return score
@@ -53,7 +52,7 @@ def main():
     k_ar = np.random.uniform(size=(order[0],))
     k_ma = np.random.uniform(size=(order[1],))
     res = minimize(optimization_step, np.array([k_ar, k_ma]),
-                   method=solver, tol=1e-7, options={'maxiter': 1000, 'disp': True})
+                   method=solver, tol=1e-7, options={'maxiter': 10000, 'disp': True})
     print(res.x)
 
 
