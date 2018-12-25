@@ -51,11 +51,12 @@ def main():
 
     np.set_printoptions(linewidth=150, precision=2, suppress=True)
 
-    solver = 'Nelder-Mead' # Powell
-    k_ar = np.random.uniform(size=(order[0],))
-    k_ma = np.random.uniform(size=(order[1],))
+    solver = 'Nelder-Mead'  # Powell
+    np.random.seed(123)
+    k_ar = np.random.uniform(size=(order[0],)) * 0.1
+    k_ma = np.random.uniform(size=(order[1],)) * 0.1
     res = minimize(optimization_step, np.concatenate([k_ar, k_ma]),
-                   method=solver, tol=1e-9, options={'maxiter': 10000, 'disp': True})
+                   method=solver, options={'maxiter': 10000, 'disp': True})
     print(res.x)
 
 
