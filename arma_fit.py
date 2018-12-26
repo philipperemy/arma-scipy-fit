@@ -12,10 +12,18 @@ def main():
     est_params = params['est']
     true_ar = params['true_ar']
     true_ma = params['true_ma']
-    nobs = y.shape[-1]
+    n_time_series, nobs = y.shape
     num_steps = 0
 
+    np.random.seed(123)
+    k_ar = np.random.uniform(low=-1, high=1, size=(n_time_series, order[0],)) * 0.1
+    k_ma = np.random.uniform(low=-1, high=1, size=(n_time_series, order[1],)) * 0.1
+    parameters = np.stack([k_ar, k_ma])  # (2, num_time_series, order).
+    parameters_shape = parameters.shape
+
     def predict_step(x, k_ar_0, k_ma_0):
+        assert len(x.shape) == len(k_ar_0.shape) == len(k_ma_0.shape)
+        assert x.shape[0] == k_ar_0.shape[0] == k_ma_0.shape[0]
         order_ar = order[0]
         order_ma = order[1]
         num_time_series = x.shape[0]
@@ -25,8 +33,8 @@ def main():
         for t in range(order_ar, nobs):
             # np.sum(np.stack([k_ar_0, k_ar_0]) * x[:, t - order_ar:t], axis=1)
 
-            ar_term = np.sum(np.stack([k_ar_0, k_ar_0]) * np.flip(x[:, t - order_ar:t], axis=1), axis=1)
-            ma_term = np.sum(np.stack([k_ma_0, k_ma_0]) * np.flip(noises[:, t - order_ma:t], axis=1), axis=1)
+            ar_term = np.sum(k_ar_0 * np.flip(x[:, t - order_ar:t], axis=1), axis=1)
+            ma_term = np.sum(k_ma_0 * np.flip(noises[:, t - order_ma:t], axis=1), axis=1)
 
             predictions[:, t] = ar_term + ma_term
             noises[:, t] = x[:, t] - predictions[:, t]
@@ -41,23 +49,27 @@ def main():
     def optimization_step(coefficients):
         nonlocal num_steps
         nonlocal order
-        k_ar_0 = coefficients[:order[0]]
-        k_ma_0 = coefficients[order[0]:]
+
+        k_ar_0, k_ma_0 = np.reshape(coefficients, parameters_shape)
         predictions = predict_step(y, k_ar_0, k_ma_0)
         score = score_function(predictions, y)
 
-        print(str(num_steps).zfill(6), coefficients, score)
+        print('AR')
+        print(np.matrix(k_ar_0))
+        print('MA')
+        print(np.matrix(k_ma_0))
+        print(str(num_steps).zfill(6), score)
+        print('#' * 80)
 
         num_steps += 1
         return score
 
     np.set_printoptions(linewidth=150, precision=4, suppress=True)
     solver = 'Nelder-Mead'  # Powell
-    np.random.seed(123)
-    k_ar = np.random.uniform(low=-1, high=1, size=(order[0],)) * 0.1
-    k_ma = np.random.uniform(low=-1, high=1, size=(order[1],)) * 0.1
-    res = minimize(optimization_step, np.concatenate([k_ar, k_ma]),
-                   method=solver, options={'maxiter': 10000, 'disp': True})
+    res = minimize(fun=optimization_step,
+                   x0=parameters.flatten(),
+                   method=solver,
+                   options={'maxiter': 10000, 'disp': True})
 
     np.set_printoptions(linewidth=150, precision=None, suppress=True)
     print('Estimation of the coefficients with the scipy package:')
