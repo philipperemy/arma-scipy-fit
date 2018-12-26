@@ -9,6 +9,7 @@ def main():
     y = params['y']
     order = params['order']
     nobs = len(y)
+    num_steps = 0
 
     def predict_step(x, k_ar_0, k_ma_0):
         order_ar = order[0]
@@ -22,8 +23,6 @@ def main():
             predictions.append(pred)
         predictions = np.transpose(predictions)
         return predictions
-
-    num_steps = 0
 
     def score_function(p, t):
         score = np.mean(np.square(np.clip(p, -1e10, 1e10) - t))

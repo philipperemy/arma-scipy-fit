@@ -5,13 +5,19 @@ from statsmodels.tsa.arima_process import ArmaProcess
 np.random.seed(12346)
 arparams = np.array([0.25, -0.5, 0.35, -0.15])  # np.array([0.25, -0.50])
 maparams = np.array([0.50, -0.4, 0.78, 0.32])
+
+print('AR coefficients = ', arparams)
+print('MA coefficients = ', maparams)
+
 ar = np.r_[1, -arparams]  # add zero-lag and negate
 ma = np.r_[1, maparams]  # add zero-lag
 arma_process = ArmaProcess(ar, ma)
+
 y = arma_process.generate_sample(20000)
 np.savez(file='y.npz', y=y, order=[len(arparams), len(maparams)])
 model = ARMA(y, (len(arparams), len(maparams))).fit(trend='nc', disp=0)
 
+print('Estimation of the coefficients with the statsmodels.tsa (least squares) package:')
 print(model.params)
 
 # import matplotlib.pyplot as plt
