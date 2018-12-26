@@ -12,20 +12,25 @@ def main():
     est_params = params['est']
     true_ar = params['true_ar']
     true_ma = params['true_ma']
-    nobs = len(y)
+    nobs = y.shape[-1]
     num_steps = 0
 
     def predict_step(x, k_ar_0, k_ma_0):
         order_ar = order[0]
         order_ma = order[1]
-        noises = [np.random.normal(size=1, scale=0.1)] * order_ma
-        predictions = [np.zeros(shape=(1,))] * order_ar
+        num_time_series = x.shape[0]
+        noises = np.zeros_like(x)
+        predictions = np.zeros_like(x)
+        noises[:, 0:order_ma] = np.random.normal(size=(num_time_series, order_ma), scale=0.1)
         for t in range(order_ar, nobs):
-            pred = np.dot(k_ar_0, np.flip(x[t - order_ar:t])) + np.dot(k_ma_0, np.flip(noises[t - order_ma:t]))
-            noise = x[t] - pred
-            noises.append(noise)
-            predictions.append(pred)
-        predictions = np.transpose(predictions)
+            # np.sum(np.stack([k_ar_0, k_ar_0]) * x[:, t - order_ar:t], axis=1)
+
+            ar_term = np.sum(np.stack([k_ar_0, k_ar_0]) * np.flip(x[:, t - order_ar:t], axis=1), axis=1)
+            ma_term = np.sum(np.stack([k_ma_0, k_ma_0]) * np.flip(noises[:, t - order_ma:t], axis=1), axis=1)
+
+            predictions[:, t] = ar_term + ma_term
+            noises[:, t] = x[:, t] - predictions[:, t]
+
         return predictions
 
     def score_function(p, t):

@@ -21,6 +21,10 @@ model = ARMA(y, (len(arparams), len(maparams))).fit(trend='nc', disp=0)
 
 print('Estimation of the coefficients with the statsmodels.tsa (least squares) package:')
 print(model.params)
+
+y = np.vstack([y, y])
+print(y.shape)
+
 np.savez(file='y.npz', y=y, order=[len(arparams), len(maparams)],
          est=model.params, true_ar=arparams, true_ma=maparams)
 print('Output is y.npz...')
