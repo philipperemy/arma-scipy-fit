@@ -13,12 +13,15 @@ ar = np.r_[1, -arparams]  # add zero-lag and negate
 ma = np.r_[1, maparams]  # add zero-lag
 arma_process = ArmaProcess(ar, ma)
 
+print('Generating the samples...')
 y = arma_process.generate_sample(20000)
-np.savez(file='y.npz', y=y, order=[len(arparams), len(maparams)])
 model = ARMA(y, (len(arparams), len(maparams))).fit(trend='nc', disp=0)
 
 print('Estimation of the coefficients with the statsmodels.tsa (least squares) package:')
 print(model.params)
+np.savez(file='y.npz', y=y, order=[len(arparams), len(maparams)],
+         est=model.params, true_ar=arparams, true_ma=maparams)
+print('Output is y.npz...')
 
 # import matplotlib.pyplot as plt
 #

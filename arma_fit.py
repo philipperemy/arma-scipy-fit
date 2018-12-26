@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.optimize import minimize
 
 
 def main():
@@ -8,6 +9,9 @@ def main():
     params = np.load('y.npz')
     y = params['y']
     order = params['order']
+    est_params = params['est']
+    true_ar = params['true_ar']
+    true_ma = params['true_ma']
     nobs = len(y)
     num_steps = 0
 
@@ -37,22 +41,31 @@ def main():
         predictions = predict_step(y, k_ar_0, k_ma_0)
         score = score_function(predictions, y)
 
-        print(coefficients, score)
+        print(str(num_steps).zfill(6), coefficients, score)
 
         num_steps += 1
         return score
 
-    from scipy.optimize import minimize
-
-    np.set_printoptions(linewidth=150, precision=2, suppress=True)
-
+    np.set_printoptions(linewidth=150, precision=4, suppress=True)
     solver = 'Nelder-Mead'  # Powell
     np.random.seed(123)
     k_ar = np.random.uniform(low=-1, high=1, size=(order[0],)) * 0.1
     k_ma = np.random.uniform(low=-1, high=1, size=(order[1],)) * 0.1
     res = minimize(optimization_step, np.concatenate([k_ar, k_ma]),
                    method=solver, options={'maxiter': 10000, 'disp': True})
+
+    np.set_printoptions(linewidth=150, precision=None, suppress=True)
+    print('Estimation of the coefficients with the scipy package:')
     print(res.x)
+
+    print('Estimation of the coefficients with the statsmodels.tsa (least squares) package:')
+    print(est_params)
+
+    print('True AR coefficients:')
+    print(true_ar)
+
+    print('True MA coefficients:')
+    print(true_ma)
 
 
 if __name__ == '__main__':
