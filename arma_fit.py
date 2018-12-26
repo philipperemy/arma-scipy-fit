@@ -1,5 +1,15 @@
+import json
 import numpy as np
+import os
+from argparse import ArgumentParser
 from scipy.optimize import minimize
+from uuid import uuid4
+
+
+def get_script_arguments():
+    args = ArgumentParser()
+    args.add_argument('-s', '--solver', type=str, default='Nelder-Mead')
+    return args.parse_args()
 
 
 def main():
@@ -13,9 +23,31 @@ def main():
     true_ar = params['true_ar']
     true_ma = params['true_ma']
     n_time_series, nobs = y.shape
-    num_steps = 0
 
-    np.random.seed(123)
+    args = get_script_arguments()
+
+    available_solvers = [
+        'Nelder-Mead',
+        'Powell',
+        'CG',
+        'BFGS',
+        'Newton-CG',
+        'L-BFGS-B',
+        'TNC',
+        'COBYLA',
+        'SLSQP',
+        'dogleg',
+        'trust-ncg',
+        'trust-exact',
+        'trust-krylov'
+    ]
+
+    solver = args.solver
+    assert solver in available_solvers
+
+    num_steps = 0
+    scores = []
+
     k_ar = np.random.uniform(low=-1, high=1, size=(n_time_series, order[0],)) * 0.1
     k_ma = np.random.uniform(low=-1, high=1, size=(n_time_series, order[1],)) * 0.1
     parameters = np.stack([k_ar, k_ma])  # (2, num_time_series, order).
@@ -49,10 +81,12 @@ def main():
     def optimization_step(coefficients):
         nonlocal num_steps
         nonlocal order
+        nonlocal scores
 
         k_ar_0, k_ma_0 = np.reshape(coefficients, parameters_shape)
         predictions = predict_step(y, k_ar_0, k_ma_0)
         score = score_function(predictions, y)
+        scores.append(score)
 
         print('AR')
         print(np.matrix(k_ar_0))
@@ -65,7 +99,8 @@ def main():
         return score
 
     np.set_printoptions(linewidth=150, precision=4, suppress=True)
-    solver = 'Nelder-Mead'  # Powell
+
+    print(solver)
     res = minimize(fun=optimization_step,
                    x0=parameters.flatten(),
                    method=solver,
@@ -83,6 +118,20 @@ def main():
 
     print('True MA coefficients:')
     print(true_ma)
+
+    results = {
+        'solver': str(solver),
+        'scores': list(scores),
+        'x': list(res.x)
+    }
+
+    output_dir = 'out'
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    output_filename = os.path.join(output_dir, str(uuid4()) + '.json')
+    with open(output_filename, 'w') as w:
+        json.dump(obj=results, fp=w, indent=4, sort_keys=True)
+    print('Results dumped in', output_filename)
 
 
 if __name__ == '__main__':
