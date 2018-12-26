@@ -15,6 +15,8 @@ arma_process = ArmaProcess(ar, ma)
 
 print('Generating the samples...')
 y = arma_process.generate_sample(20000)
+
+print('Estimating the parameters (statsmodels.tsa)...')
 model = ARMA(y, (len(arparams), len(maparams))).fit(trend='nc', disp=0)
 
 print('Estimation of the coefficients with the statsmodels.tsa (least squares) package:')
