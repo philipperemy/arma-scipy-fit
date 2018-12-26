@@ -3,13 +3,13 @@ Estimating coefficients of ARMA models with the Scipy package.
 
 
 ```
-000847 [ 0.1499 -0.5917  0.28   -0.1156  0.2239 -0.0172  0.639   0.1996] 1.4415552801683131
+################################################################################
 Optimization terminated successfully.
-         Current function value: 1.441535
-         Iterations: 538
-         Function evaluations: 848
+         Current function value: 1.432208
+         Iterations: 508
+         Function evaluations: 788
 Estimation of the coefficients with the scipy package:
-[ 0.1499 -0.5917  0.28   -0.1156  0.2239 -0.0172  0.639   0.1996]
+[ 0.2235 -0.5872  0.3143 -0.1805  0.167  -0.0464  0.6528  0.224 ]
 Estimation of the coefficients with the statsmodels.tsa (least squares) package:
 [ 0.237  -0.4998  0.3467 -0.128   0.1542 -0.1467  0.6244  0.2245]
 True AR coefficients:
