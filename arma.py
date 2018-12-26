@@ -30,6 +30,9 @@ np.savez(file='y.npz', y=y, order=[len(arparams), len(maparams)],
          est=model.params, true_ar=arparams, true_ma=maparams)
 print('Output is y.npz...')
 
+mse_error = np.mean(np.square(model.predict() - y))
+print('MSE predictions in-sample set: ', mse_error)
+
 # import matplotlib.pyplot as plt
 #
 # plt.plot(y)
