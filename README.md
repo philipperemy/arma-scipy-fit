@@ -1,6 +1,16 @@
 # ARMA w. Scipy
 Estimating coefficients of ARMA models with the Scipy package.
 
+Installation
+```bash
+pip install arma-scipy
+```
+
+Python import
+```python
+from arma_scipy import fit
+```
+
 ## Motivation
 
 ARMA models in general can be, after choosing p and q, fitted by least
