@@ -8,6 +8,34 @@ def _mse(p, t):
     return score
 
 
+def predict(x_, ar, ma,
+            preprocessing_function=None,
+            postprocessing_function=None):
+    assert len(x_.shape) == len(ar.shape) == len(ma.shape)
+    assert x_.shape[0] == ar.shape[0] == ma.shape[0]
+    nobs = x_.shape[-1]
+    if preprocessing_function is not None:
+        x = np.array(preprocessing_function(x_))
+    else:
+        x = x_
+    order_ar = ar.shape[-1]
+    order_ma = ma.shape[-1]
+    num_time_series = x.shape[0]
+    noises = np.zeros_like(x)
+    predictions = np.zeros_like(x)
+    noises[:, 0:order_ma] = np.random.normal(size=(num_time_series, order_ma), scale=0.1)
+    for t in range(order_ar, nobs):
+        ar_term = np.sum(ar * np.flip(x[:, t - order_ar:t], axis=1), axis=1)
+        ma_term = np.sum(ma * np.flip(noises[:, t - order_ma:t], axis=1), axis=1)
+
+        predictions[:, t] = ar_term + ma_term
+        noises[:, t] = x[:, t] - predictions[:, t]
+
+    if postprocessing_function is not None:
+        predictions = postprocessing_function(predictions)
+    return predictions
+
+
 def fit(y: np.array,
         order: list,  # [1, 1] => ARMA(1,1)
         solver: str = 'Nelder-Mead',
@@ -15,12 +43,23 @@ def fit(y: np.array,
         fit_x0=False,
         preprocessing_function=None,
         postprocessing_function=None,
+        ar_init_function=None,
+        ma_init_function=None,
         verbose=True):
     assert len(order) == 2
     assert solver in ['Nelder-Mead', 'Powell', 'CG', 'BFGS', 'L-BFGS-B', 'TNC', 'SLSQP']
     n_time_series, nobs = y.shape
     num_steps = 0
     scores = []
+
+    def default_init(shape):
+        return np.random.uniform(low=-1, high=1, size=shape) * 0.1
+
+    def ar_init(shape):
+        return ar_init_function(shape) if ar_init_function is not None else default_init(shape)
+
+    def ma_init(shape):
+        return ma_init_function(shape) if ma_init_function is not None else default_init(shape)
 
     if fit_x0:
         from statsmodels.tsa.arima_model import ARMA
@@ -34,44 +73,20 @@ def fit(y: np.array,
                 k_ar[ii] = model.params[:order[0]]
                 k_ma[ii] = model.params[order[0]:]
             except Exception:
-                k_ar[ii] = np.random.uniform(low=-1, high=1, size=(order[0],)) * 0.1
-                k_ma[ii] = np.random.uniform(low=-1, high=1, size=(order[1],)) * 0.1
+                k_ar[ii] = ar_init((order[0],))
+                k_ma[ii] = ma_init((order[1],))
     else:
-        k_ar = np.random.uniform(low=-1, high=1, size=(n_time_series, order[0],)) * 0.1
-        k_ma = np.random.uniform(low=-1, high=1, size=(n_time_series, order[1],)) * 0.1
+        k_ar = ar_init((n_time_series, order[0],))
+        k_ma = ma_init((n_time_series, order[1],))
     parameters = np.stack([k_ar, k_ma])  # (2, num_time_series, order).
     parameters_shape = parameters.shape
-
-    def predict_step(x_, k_ar_0, k_ma_0):
-        assert len(x_.shape) == len(k_ar_0.shape) == len(k_ma_0.shape)
-        assert x_.shape[0] == k_ar_0.shape[0] == k_ma_0.shape[0]
-        if preprocessing_function is not None:
-            x = np.array(preprocessing_function(x_))
-        else:
-            x = x_
-        order_ar = order[0]
-        order_ma = order[1]
-        num_time_series = x.shape[0]
-        noises = np.zeros_like(x)
-        predictions = np.zeros_like(x)
-        noises[:, 0:order_ma] = np.random.normal(size=(num_time_series, order_ma), scale=0.1)
-        for t in range(order_ar, nobs):
-            ar_term = np.sum(k_ar_0 * np.flip(x[:, t - order_ar:t], axis=1), axis=1)
-            ma_term = np.sum(k_ma_0 * np.flip(noises[:, t - order_ma:t], axis=1), axis=1)
-
-            predictions[:, t] = ar_term + ma_term
-            noises[:, t] = x[:, t] - predictions[:, t]
-
-        if postprocessing_function is not None:
-            predictions = postprocessing_function(predictions)
-        return predictions
 
     def optimization_step(coefficients):
         nonlocal num_steps
         nonlocal scores
 
         k_ar_0, k_ma_0 = np.reshape(coefficients, parameters_shape)
-        predictions = predict_step(y, k_ar_0, k_ma_0)
+        predictions = predict(y, k_ar_0, k_ma_0, preprocessing_function, postprocessing_function)
         score = score_function(predictions, y)
         scores.append(score)
 
@@ -93,4 +108,4 @@ def fit(y: np.array,
                        options={'maxiter': 10000, 'disp': True})
     finally:
         np.set_printoptions(linewidth=150, precision=None, suppress=True)
-    return res, scores
+    return res, scores, np.reshape(res.x, parameters_shape)
