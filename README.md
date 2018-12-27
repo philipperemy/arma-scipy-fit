@@ -61,7 +61,7 @@ def score_function(p, t):
 - The optimization on the ARMA coefficients is done first with the `statsmodels`. This is our `x0`.
 - The second optimization is done with `scipy` and the custome score function.
 
-The second fit seems to add some value as the overall score decreases from 0.2090 to 0.2084. This represents a reduction of ~0.29% of the custom score. Concretely, after the first fit, the model correctly predicts the sign of the true value 79.10% of the time. After the second fit, this percentage goes up to 79.16%.
+The second fit seems to add some value as the overall score decreases from 0.2090 to 0.2084. This represents a reduction of ~0.29% of the custom score. Concretely, after the first fit, the model correctly predicts the sign of the true value 79.10% of the time. After the second fit, this percentage goes up to 79.16%, thanks to Scipy.
 
 <p align="center">
   <img src="misc/custom_score_function.png" width="600">
