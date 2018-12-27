@@ -45,6 +45,26 @@ True ARMA coefficients:
   <img src="misc/arma_44_fit.png" width="600">
 </p>
 
-## Conclusion
-
 The conclusion of this comparison is such that there it makes little sense to fit the coefficients of an ARMA model with a numerical method like `scipy.minimize`. A traditional fit using `statsmodels` is preferable. Yet, `scipy.minimize` could be used if the score function was not the mean squared error. Finding a good x0 is challenging and one way to have a smooth optimization could lie in the estimation of x0 by `statsmodels`. In other words, fit the coefficients with `statsmodels` then optimize with `scipy.minimize` and your custom score function.
+
+## Custom score function
+
+Lets consider the custom score function that assigns:
+- 1 if the prediction has the same sign as the true value.
+- 0 otherwise.
+
+```python
+def score_function(p, t):
+    return 1 - np.mean(((p > 0) & (t > 0)) | ((p < 0) & (t < 0)))
+```
+
+- The optimization on the ARMA coefficients is done first with the `statsmodels`. This is our `x0`.
+- The second optimization is done with `scipy` and the custome score function.
+
+The second fit seems to add some value as the overall score decreases from 0.2090 to 0.2084. This represents a reduction of ~0.29% of the custom score. Concretely, after the first fit, the model correctly predicts the sign of the true value 79.10% of the time. After the second fit, this percentage goes up to 79.16%.
+
+<p align="center">
+  <img src="misc/custom_score_function.png" width="600">
+</p>
+
+
