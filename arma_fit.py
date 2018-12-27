@@ -23,15 +23,9 @@ def scipy_fit(y: np.array, order: list, solver: str = 'Nelder-Mead'):
         'Powell',
         'CG',
         'BFGS',
-        'Newton-CG',
         'L-BFGS-B',
         'TNC',
-        'COBYLA',
         'SLSQP',
-        'dogleg',
-        'trust-ncg',
-        'trust-exact',
-        'trust-krylov'
     ]
 
     assert solver in available_solvers
