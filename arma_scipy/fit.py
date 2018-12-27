@@ -12,32 +12,43 @@ def fit(y: np.array,
         order: list,  # [1, 1] => ARMA(1,1)
         solver: str = 'Nelder-Mead',
         score_function=_mse,
-        fit_x0=False):
+        fit_x0=False,
+        preprocessing_function=None,
+        postprocessing_function=None,
+        verbose=True):
     assert len(order) == 2
+    assert solver in ['Nelder-Mead', 'Powell', 'CG', 'BFGS', 'L-BFGS-B', 'TNC', 'SLSQP']
     n_time_series, nobs = y.shape
     num_steps = 0
     scores = []
-
-    assert solver in ['Nelder-Mead', 'Powell', 'CG', 'BFGS', 'L-BFGS-B', 'TNC', 'SLSQP']
 
     if fit_x0:
         from statsmodels.tsa.arima_model import ARMA
         print('Estimating the parameters (statsmodels.tsa)...')
         k_ar = np.zeros(shape=(n_time_series, order[0],))
         k_ma = np.zeros(shape=(n_time_series, order[1],))
-        for ii in range(y.shape[0]):
-            model = ARMA(y[ii], order).fit(trend='nc', disp=0)
-            k_ar[ii] = model.params[:order[0]]
-            k_ma[ii] = model.params[order[0]:]
+        y_ = np.array(preprocessing_function(y))
+        for ii in range(y_.shape[0]):
+            try:
+                model = ARMA(y_[ii], order).fit(trend='nc', disp=0)
+                k_ar[ii] = model.params[:order[0]]
+                k_ma[ii] = model.params[order[0]:]
+            except Exception:
+                k_ar[ii] = np.random.uniform(low=-1, high=1, size=(order[0],)) * 0.1
+                k_ma[ii] = np.random.uniform(low=-1, high=1, size=(order[1],)) * 0.1
     else:
         k_ar = np.random.uniform(low=-1, high=1, size=(n_time_series, order[0],)) * 0.1
         k_ma = np.random.uniform(low=-1, high=1, size=(n_time_series, order[1],)) * 0.1
     parameters = np.stack([k_ar, k_ma])  # (2, num_time_series, order).
     parameters_shape = parameters.shape
 
-    def predict_step(x, k_ar_0, k_ma_0):
-        assert len(x.shape) == len(k_ar_0.shape) == len(k_ma_0.shape)
-        assert x.shape[0] == k_ar_0.shape[0] == k_ma_0.shape[0]
+    def predict_step(x_, k_ar_0, k_ma_0):
+        assert len(x_.shape) == len(k_ar_0.shape) == len(k_ma_0.shape)
+        assert x_.shape[0] == k_ar_0.shape[0] == k_ma_0.shape[0]
+        if preprocessing_function is not None:
+            x = np.array(preprocessing_function(x_))
+        else:
+            x = x_
         order_ar = order[0]
         order_ma = order[1]
         num_time_series = x.shape[0]
@@ -51,6 +62,8 @@ def fit(y: np.array,
             predictions[:, t] = ar_term + ma_term
             noises[:, t] = x[:, t] - predictions[:, t]
 
+        if postprocessing_function is not None:
+            predictions = postprocessing_function(predictions)
         return predictions
 
     def optimization_step(coefficients):
@@ -62,13 +75,13 @@ def fit(y: np.array,
         score = score_function(predictions, y)
         scores.append(score)
 
-        print('AR')
-        print(np.matrix(k_ar_0))
-        print('MA')
-        print(np.matrix(k_ma_0))
         print(str(num_steps).zfill(6), score)
-        print('#' * 80)
-
+        if verbose:
+            print('AR')
+            print(np.matrix(k_ar_0))
+            print('MA')
+            print(np.matrix(k_ma_0))
+            print('#' * 80)
         num_steps += 1
         return score
 
