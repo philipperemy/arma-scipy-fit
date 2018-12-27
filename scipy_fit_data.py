@@ -9,6 +9,7 @@ from uuid import uuid4
 def get_script_arguments():
     args = ArgumentParser()
     args.add_argument('-s', '--solver', type=str, default='Nelder-Mead')
+    args.add_argument('-x0', '--fit_x0', action='store_true')
     return args.parse_args()
 
 
@@ -21,7 +22,8 @@ def mse(p, t):
 def scipy_fit(y: np.array,
               order: list,  # [1, 1] => ARMA(1,1)
               solver: str = 'Nelder-Mead',
-              score_function=mse):
+              score_function=mse,
+              fit_x0=False):
     assert len(order) == 2
     n_time_series, nobs = y.shape
     num_steps = 0
@@ -29,8 +31,18 @@ def scipy_fit(y: np.array,
 
     assert solver in ['Nelder-Mead', 'Powell', 'CG', 'BFGS', 'L-BFGS-B', 'TNC', 'SLSQP']
 
-    k_ar = np.random.uniform(low=-1, high=1, size=(n_time_series, order[0],)) * 0.1
-    k_ma = np.random.uniform(low=-1, high=1, size=(n_time_series, order[1],)) * 0.1
+    if fit_x0:
+        from statsmodels.tsa.arima_model import ARMA
+        print('Estimating the parameters (statsmodels.tsa)...')
+        k_ar = np.zeros(shape=(n_time_series, order[0],))
+        k_ma = np.zeros(shape=(n_time_series, order[1],))
+        for ii in range(y.shape[0]):
+            model = ARMA(y[ii], order).fit(trend='nc', disp=0)
+            k_ar[ii] = model.params[:order[0]]
+            k_ma[ii] = model.params[order[0]:]
+    else:
+        k_ar = np.random.uniform(low=-1, high=1, size=(n_time_series, order[0],)) * 0.1
+        k_ma = np.random.uniform(low=-1, high=1, size=(n_time_series, order[1],)) * 0.1
     parameters = np.stack([k_ar, k_ma])  # (2, num_time_series, order).
     parameters_shape = parameters.shape
 
@@ -95,8 +107,9 @@ def main():
 
     args = get_script_arguments()
     solver = args.solver
+    fit_x0 = args.fit_x0
 
-    res, scores = scipy_fit(y, order, solver)
+    res, scores = scipy_fit(y, order, solver, mse, fit_x0)
 
     print('Estimation of the coefficients with the scipy package:')
     print(res.x)
