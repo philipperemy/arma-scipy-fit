@@ -1,6 +1,11 @@
 # ARMA w. Scipy
 Estimating coefficients of ARMA models with the Scipy package.
 
+```bash
+python generate_arma_process.py
+python scipy_fit_data.py
+```
+
 
 ```
 ################################################################################

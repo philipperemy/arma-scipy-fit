@@ -40,7 +40,7 @@ plt.plot(mean, linewidth=2)
 plt.plot(best, linewidth=1.5)
 plt.fill_between(range(len(mean)), q5, q95, color='b', alpha=.1)
 # plt.fill_between(range(len(mean)), mean - 2 * std, mean + 2 * std, color='b', alpha=.1)
-plt.axhline(y=1.418, color='r', alpha=.3)
+plt.axhline(y=1.4179353816045928, color='r', alpha=.3)
 plt.grid()
 plt.legend(['mean run (scipy.minimize)', 'best run (scipy.minimize)', 'statsmodels.tsa',
             'P5, P95 (scipy.minimize)'])  # , ' +/- 2 std'])
