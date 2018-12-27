@@ -12,19 +12,11 @@ def get_script_arguments():
     return args.parse_args()
 
 
-def main():
-    """
-    Main training function.
-    """
-    params = np.load('y.npz')
-    y = params['y']
-    order = params['order']
-    est_params = params['est']
-    true_ar = params['true_ar']
-    true_ma = params['true_ma']
+def scipy_fit(y: np.array, order: list, solver: str = 'Nelder-Mead'):
+    assert len(order) == 2  # [1, 1] => ARMA(1,1)
     n_time_series, nobs = y.shape
-
-    args = get_script_arguments()
+    num_steps = 0
+    scores = []
 
     available_solvers = [
         'Nelder-Mead',
@@ -42,11 +34,7 @@ def main():
         'trust-krylov'
     ]
 
-    solver = args.solver
     assert solver in available_solvers
-
-    num_steps = 0
-    scores = []
 
     k_ar = np.random.uniform(low=-1, high=1, size=(n_time_series, order[0],)) * 0.1
     k_ma = np.random.uniform(low=-1, high=1, size=(n_time_series, order[1],)) * 0.1
@@ -80,7 +68,6 @@ def main():
 
     def optimization_step(coefficients):
         nonlocal num_steps
-        nonlocal order
         nonlocal scores
 
         k_ar_0, k_ma_0 = np.reshape(coefficients, parameters_shape)
@@ -105,6 +92,24 @@ def main():
                    x0=parameters.flatten(),
                    method=solver,
                    options={'maxiter': 10000, 'disp': True})
+    return res, scores
+
+
+def main():
+    """
+    Main training function.
+    """
+    params = np.load('y.npz')
+    y = params['y']
+    order = params['order']
+    est_params = params['est']
+    true_ar = params['true_ar']
+    true_ma = params['true_ma']
+
+    args = get_script_arguments()
+    solver = args.solver
+
+    res, scores = scipy_fit(y, order, solver)
 
     np.set_printoptions(linewidth=150, precision=None, suppress=True)
     print('Estimation of the coefficients with the scipy package:')
