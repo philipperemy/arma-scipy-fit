@@ -19,5 +19,5 @@ True MA coefficients:
 ```
 
 <p align="center">
-  <img src="misc/arma_44_fit.png" width="500">
+  <img src="misc/arma_44_fit.png" width="600">
 </p>
