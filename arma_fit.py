@@ -12,23 +12,22 @@ def get_script_arguments():
     return args.parse_args()
 
 
-def scipy_fit(y: np.array, order: list, solver: str = 'Nelder-Mead'):
-    assert len(order) == 2  # [1, 1] => ARMA(1,1)
+def mse(p, t):
+    score = np.mean(np.square(np.clip(p, -1e10, 1e10) - t))
+    # score = np.mean((np.sign(p) * np.sign(t) + 1) / 2)
+    return score
+
+
+def scipy_fit(y: np.array,
+              order: list,  # [1, 1] => ARMA(1,1)
+              solver: str = 'Nelder-Mead',
+              score_function=mse):
+    assert len(order) == 2
     n_time_series, nobs = y.shape
     num_steps = 0
     scores = []
 
-    available_solvers = [
-        'Nelder-Mead',
-        'Powell',
-        'CG',
-        'BFGS',
-        'L-BFGS-B',
-        'TNC',
-        'SLSQP',
-    ]
-
-    assert solver in available_solvers
+    assert solver in ['Nelder-Mead', 'Powell', 'CG', 'BFGS', 'L-BFGS-B', 'TNC', 'SLSQP']
 
     k_ar = np.random.uniform(low=-1, high=1, size=(n_time_series, order[0],)) * 0.1
     k_ma = np.random.uniform(low=-1, high=1, size=(n_time_series, order[1],)) * 0.1
@@ -55,11 +54,6 @@ def scipy_fit(y: np.array, order: list, solver: str = 'Nelder-Mead'):
 
         return predictions
 
-    def score_function(p, t):
-        score = np.mean(np.square(np.clip(p, -1e10, 1e10) - t))
-        # score = np.mean((np.sign(p) * np.sign(t) + 1) / 2)
-        return score
-
     def optimization_step(coefficients):
         nonlocal num_steps
         nonlocal scores
@@ -81,7 +75,6 @@ def scipy_fit(y: np.array, order: list, solver: str = 'Nelder-Mead'):
 
     np.set_printoptions(linewidth=150, precision=4, suppress=True)
 
-    print(solver)
     res = minimize(fun=optimization_step,
                    x0=parameters.flatten(),
                    method=solver,
