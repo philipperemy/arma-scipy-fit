@@ -38,9 +38,11 @@ True ARMA coefficients:
 
 ## Comparison
 
-- It is not a surprise that the score function is minimized by the fit of the `statsmodels` package. Indeed, the maximum likelihood estimation is guaranteed to yield the lowest MSE score on the train set.
+- It is not a surprise that the score function is minimized by the fit of the `statsmodels` package. Indeed, the maximum likelihood estimation is guaranteed to yield the lowest mean squared error score on the train set.
 - The Scipy minimize function is doing a relatively good job at being close to this minimum. However, due to the randomness nature of this optimization and the crucial choice of x0 (initial values of the coefficients to optimize), several runs are necessary to guarantee to be close enough to this global minimum. It's clear enough that there is a strong variability across the runs. A significant proportion of runs do not get even closer to this minimum. On 200 runs, the average hovers ~10% above the minimum expected value, then starts to overfit. The best run, however, reaches 1.41807, a score extremely close to the target minimum score of 1.4179.
 
 <p align="center">
   <img src="misc/arma_44_fit.png" width="600">
 </p>
+
+The conclusion of this comparison is such that there it makes little sense to fit the coefficients of an ARMA model with a numerical method like `scipy.minimize`. A traditional fit using `statsmodels` is preferable. Yet, `scipy.minimize` could be used if the score function was not the mean squared error. Finding a good x0 is challenging and one way to have a smooth optimization could lie in the estimation of x0 by `statsmodels`. In other words, fit the coefficients with `statsmodels` then optimize with `scipy.minimize` and your custom score function.
