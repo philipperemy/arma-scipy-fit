@@ -44,7 +44,6 @@ def scipy_fit(y: np.array,
         predictions = np.zeros_like(x)
         noises[:, 0:order_ma] = np.random.normal(size=(num_time_series, order_ma), scale=0.1)
         for t in range(order_ar, nobs):
-            # np.sum(np.stack([k_ar_0, k_ar_0]) * x[:, t - order_ar:t], axis=1)
 
             ar_term = np.sum(k_ar_0 * np.flip(x[:, t - order_ar:t], axis=1), axis=1)
             ma_term = np.sum(k_ma_0 * np.flip(noises[:, t - order_ma:t], axis=1), axis=1)
