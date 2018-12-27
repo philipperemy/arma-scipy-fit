@@ -1,5 +1,98 @@
+import json
 import numpy as np
+import os
+from argparse import ArgumentParser
 from scipy.optimize import minimize
+from uuid import uuid4
+
+
+def get_script_arguments():
+    args = ArgumentParser()
+    args.add_argument('-s', '--solver', type=str, default='Nelder-Mead')
+    return args.parse_args()
+
+
+def scipy_fit(y: np.array, order: list, solver: str = 'Nelder-Mead'):
+    assert len(order) == 2  # [1, 1] => ARMA(1,1)
+    n_time_series, nobs = y.shape
+    num_steps = 0
+    scores = []
+
+    available_solvers = [
+        'Nelder-Mead',
+        'Powell',
+        'CG',
+        'BFGS',
+        'Newton-CG',
+        'L-BFGS-B',
+        'TNC',
+        'COBYLA',
+        'SLSQP',
+        'dogleg',
+        'trust-ncg',
+        'trust-exact',
+        'trust-krylov'
+    ]
+
+    assert solver in available_solvers
+
+    k_ar = np.random.uniform(low=-1, high=1, size=(n_time_series, order[0],)) * 0.1
+    k_ma = np.random.uniform(low=-1, high=1, size=(n_time_series, order[1],)) * 0.1
+    parameters = np.stack([k_ar, k_ma])  # (2, num_time_series, order).
+    parameters_shape = parameters.shape
+
+    def predict_step(x, k_ar_0, k_ma_0):
+        assert len(x.shape) == len(k_ar_0.shape) == len(k_ma_0.shape)
+        assert x.shape[0] == k_ar_0.shape[0] == k_ma_0.shape[0]
+        order_ar = order[0]
+        order_ma = order[1]
+        num_time_series = x.shape[0]
+        noises = np.zeros_like(x)
+        predictions = np.zeros_like(x)
+        noises[:, 0:order_ma] = np.random.normal(size=(num_time_series, order_ma), scale=0.1)
+        for t in range(order_ar, nobs):
+            # np.sum(np.stack([k_ar_0, k_ar_0]) * x[:, t - order_ar:t], axis=1)
+
+            ar_term = np.sum(k_ar_0 * np.flip(x[:, t - order_ar:t], axis=1), axis=1)
+            ma_term = np.sum(k_ma_0 * np.flip(noises[:, t - order_ma:t], axis=1), axis=1)
+
+            predictions[:, t] = ar_term + ma_term
+            noises[:, t] = x[:, t] - predictions[:, t]
+
+        return predictions
+
+    def score_function(p, t):
+        score = np.mean(np.square(np.clip(p, -1e10, 1e10) - t))
+        # score = np.mean((np.sign(p) * np.sign(t) + 1) / 2)
+        return score
+
+    def optimization_step(coefficients):
+        nonlocal num_steps
+        nonlocal scores
+
+        k_ar_0, k_ma_0 = np.reshape(coefficients, parameters_shape)
+        predictions = predict_step(y, k_ar_0, k_ma_0)
+        score = score_function(predictions, y)
+        scores.append(score)
+
+        print('AR')
+        print(np.matrix(k_ar_0))
+        print('MA')
+        print(np.matrix(k_ma_0))
+        print(str(num_steps).zfill(6), score)
+        print('#' * 80)
+
+        num_steps += 1
+        return score
+
+    np.set_printoptions(linewidth=150, precision=4, suppress=True)
+
+    print(solver)
+    res = minimize(fun=optimization_step,
+                   x0=parameters.flatten(),
+                   method=solver,
+                   options={'maxiter': 10000, 'disp': True})
+    return res, scores
 
 
 def main():
@@ -12,47 +105,11 @@ def main():
     est_params = params['est']
     true_ar = params['true_ar']
     true_ma = params['true_ma']
-    nobs = len(y)
-    num_steps = 0
 
-    def predict_step(x, k_ar_0, k_ma_0):
-        order_ar = order[0]
-        order_ma = order[1]
-        noises = [np.random.normal(size=1, scale=0.1)] * order_ma
-        predictions = [np.zeros(shape=(1,))] * order_ar
-        for t in range(order_ar, nobs):
-            pred = np.dot(k_ar_0, np.flip(x[t - order_ar:t])) + np.dot(k_ma_0, np.flip(noises[t - order_ma:t]))
-            noise = x[t] - pred
-            noises.append(noise)
-            predictions.append(pred)
-        predictions = np.transpose(predictions)
-        return predictions
+    args = get_script_arguments()
+    solver = args.solver
 
-    def score_function(p, t):
-        score = np.mean(np.square(np.clip(p, -1e10, 1e10) - t))
-        # score = np.mean((np.sign(p) * np.sign(t) + 1) / 2)
-        return score
-
-    def optimization_step(coefficients):
-        nonlocal num_steps
-        nonlocal order
-        k_ar_0 = coefficients[:order[0]]
-        k_ma_0 = coefficients[order[0]:]
-        predictions = predict_step(y, k_ar_0, k_ma_0)
-        score = score_function(predictions, y)
-
-        print(str(num_steps).zfill(6), coefficients, score)
-
-        num_steps += 1
-        return score
-
-    np.set_printoptions(linewidth=150, precision=4, suppress=True)
-    solver = 'Nelder-Mead'  # Powell
-    np.random.seed(123)
-    k_ar = np.random.uniform(low=-1, high=1, size=(order[0],)) * 0.1
-    k_ma = np.random.uniform(low=-1, high=1, size=(order[1],)) * 0.1
-    res = minimize(optimization_step, np.concatenate([k_ar, k_ma]),
-                   method=solver, options={'maxiter': 10000, 'disp': True})
+    res, scores = scipy_fit(y, order, solver)
 
     np.set_printoptions(linewidth=150, precision=None, suppress=True)
     print('Estimation of the coefficients with the scipy package:')
@@ -66,6 +123,20 @@ def main():
 
     print('True MA coefficients:')
     print(true_ma)
+
+    results = {
+        'solver': str(solver),
+        'scores': list(scores),
+        'x': list(res.x)
+    }
+
+    output_dir = 'out'
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    output_filename = os.path.join(output_dir, str(uuid4()) + '.json')
+    with open(output_filename, 'w') as w:
+        json.dump(obj=results, fp=w, indent=4, sort_keys=True)
+    print('Results dumped in', output_filename)
 
 
 if __name__ == '__main__':

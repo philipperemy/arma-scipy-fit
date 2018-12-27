@@ -17,3 +17,7 @@ True AR coefficients:
 True MA coefficients:
 [ 0.5  -0.4   0.78  0.32]
 ```
+
+<p align="center">
+  <img src="misc/arma_44_fit.png" width="600">
+</p>
