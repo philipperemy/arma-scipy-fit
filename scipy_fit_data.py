@@ -24,6 +24,10 @@ def main():
     """
     Main training function.
     """
+    if not os.path.isfile('y.npz'):
+        print('First run:')
+        print('python generate_arma_process.py')
+        exit(1)
     params = np.load('y.npz')
     y = params['y']
     order = params['order']
