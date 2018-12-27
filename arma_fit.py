@@ -44,7 +44,6 @@ def scipy_fit(y: np.array,
         predictions = np.zeros_like(x)
         noises[:, 0:order_ma] = np.random.normal(size=(num_time_series, order_ma), scale=0.1)
         for t in range(order_ar, nobs):
-
             ar_term = np.sum(k_ar_0 * np.flip(x[:, t - order_ar:t], axis=1), axis=1)
             ma_term = np.sum(k_ma_0 * np.flip(noises[:, t - order_ma:t], axis=1), axis=1)
 
@@ -78,6 +77,8 @@ def scipy_fit(y: np.array,
                    x0=parameters.flatten(),
                    method=solver,
                    options={'maxiter': 10000, 'disp': True})
+
+    np.set_printoptions(linewidth=150, precision=None, suppress=True)
     return res, scores
 
 
@@ -97,7 +98,6 @@ def main():
 
     res, scores = scipy_fit(y, order, solver)
 
-    np.set_printoptions(linewidth=150, precision=None, suppress=True)
     print('Estimation of the coefficients with the scipy package:')
     print(res.x)
 
