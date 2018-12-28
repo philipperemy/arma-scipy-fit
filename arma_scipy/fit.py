@@ -90,12 +90,12 @@ def fit(y: np.array,
         score = score_function(predictions, y)
         scores.append(score)
 
-        print(str(num_steps).zfill(6), score)
-        if verbose:
+        if verbose and num_steps % 100 == 0:
+            print(str(num_steps).zfill(6), score)
             print('AR')
-            print(np.matrix(k_ar_0))
+            print(np.matrix(k_ar_0).flatten())
             print('MA')
-            print(np.matrix(k_ma_0))
+            print(np.matrix(k_ma_0).flatten())
             print('#' * 80)
         num_steps += 1
         return score
