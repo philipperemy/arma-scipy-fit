@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='arma-scipy',
-    version='1.0',
+    version='1.1',
     description='Estimating coefficients of ARMA models with the Scipy package.',
     author='Philippe Remy',
     license='MIT',
