@@ -101,6 +101,7 @@ def fit(y: np.array,
         return score
 
     np.set_printoptions(linewidth=150, precision=4, suppress=True)
+    print('Estimating the parameters (scipy.minimize)...')
     try:
         res = minimize(fun=optimization_step,
                        x0=parameters.flatten(),
