@@ -1,1 +1,1 @@
-from arma_scipy.fit import fit
+from arma_scipy.fit import fit, predict
