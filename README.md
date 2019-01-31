@@ -2,6 +2,9 @@
 Estimating coefficients of ARMA models with the Scipy package.
 
 Installation
+
+[![Downloads](https://pepy.tech/badge/arma-scipy)](https://pepy.tech/project/arma-scipy)
+[![Downloads](https://pepy.tech/badge/arma-scipy/month)](https://pepy.tech/project/arma-scipy)
 ```bash
 pip install arma-scipy
 ```
